@@ -1,0 +1,55 @@
+#include<vector>
+#include<set>
+#include<iostream>
+#include "util.h"
+#include<fstream>
+#include "tree.h"
+#include<map>
+#include<queue>
+
+struct Priority_Item {
+    size_t priority;
+    std::unique_ptr<Tree> tree;
+    
+    bool operator==(const Priority_Item &item) const {
+        return priority == item.priority;
+    }
+    bool operator<(const Priority_Item &item) const {
+        return priority > item.priority;
+    }
+    Priority_Item(size_t priority, std::unique_ptr<Tree> tree) : priority(priority), tree(std::move(tree)) {}
+};
+
+
+int main() {
+    std::ifstream input("./to_compress.txt", std::ios::binary | std::ios::in);
+    if (!input) {
+        std::cout << "Could not open input!!" << std::endl;
+        return 1;
+    } else {
+        std::cout << "Reading input..." << std::endl;
+    }
+    std::map<char, size_t> count;
+    char c;
+    while (input.get(c)) {
+        count[c]++;
+    }
+    std::priority_queue<Priority_Item> queue;
+    for (std::pair<char, size_t> item : count) {
+        queue.push(Priority_Item(item.second, std::make_unique<Tree>(item.first)));
+    }
+    while (queue.size() > 1) {
+        size_t total_priority {queue.top().priority};
+        std::unique_ptr<Tree> left_tree = std::move(queue.top().tree);
+        queue.pop();
+        total_priority += queue.top().priority;
+        std::unique_ptr<Tree> right_tree  = std::move(queue.top().tree);
+        queue.pop();
+        std::unique_ptr<Tree> new_tree  = std::make_unique<Tree>(left_tree, right_tree);
+        new_tree->setParent(new_tree);
+        new_tree->setParent(new_tree);
+        Priority_Item new_item {total_priority, new_tree};
+        queue.push(new_item);
+    }
+    std::cout << "done" << std::endl;
+}
